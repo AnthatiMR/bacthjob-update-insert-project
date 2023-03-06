@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8e80a519-b372-4176-b617-ceedc5da70a3" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="ca74fe3e-6471-4c82-91de-cf23876ddfa5" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Masthan@123" database="data" />
+	</db:config>
+	<flow name="bacth-job-update-insertFlow" doc:id="a8089e60-e4ee-4357-b642-c1ea8470beb6" >
+		<http:listener doc:name="Listener" doc:id="3eb0907d-2708-428a-b861-cb155e15b7c9" config-ref="HTTP_Listener_config" path="/test"/>
+		<ee:transform doc:name="Transform Message" doc:id="b8196897-043d-451f-8425-d69698640edf" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="bacth-job-update-insertBatch_Job" doc:id="e9e85a34-d578-4a5e-a0cd-a53009f5938b">
+			<batch:process-records>
+				<batch:step name="Batch_Step" doc:id="6635a577-052c-462c-b30c-76d5d2e48e21" acceptPolicy="ALL">
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="5228a26a-1914-4855-9992-dd2b90e361da" size="2">
+						<ee:transform doc:name="Transform Message" doc:id="880fec9d-7cd4-4e7b-a0bc-9b781946b1db">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map{
+	id:payload.id,
+	name:payload.name,
+	phone:payload.cell,
+	gender:payload.gender,
+	group:payload.group,
+	startingdate:payload.date,
+	email:payload.email,
+	address:payload.address
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+						<db:bulk-insert doc:name="Bulk insert" doc:id="49bdc6fd-fa22-4b3a-9faa-91199d2986ac" config-ref="Database_Config">
+							<db:sql ><![CDATA[INSERT INTO `data`.`student details`
+(`Roll Number`,
+`student Name`,
+`Moblie Number`,
+`Gender`,
+`Department`,
+`Join date`,
+`Email`,
+`Address`)
+VALUES(:id, :name, :phone, :gender, :group, :startingdate, :email, :address);
+
+]]></db:sql>
+						</db:bulk-insert>
+						<logger level="INFO" doc:name="Logger" doc:id="7a4a619b-51cc-4bcb-aa4c-092f59912a6b" message=";;;;;aggrigeter logger;;;#[payload]"/>
+					</batch:aggregator>
+					<ee:transform doc:name="Transform Message" doc:id="6391df44-899a-4e83-a210-dda6427ad47f" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="1d18e716-c4cb-42d1-b0e1-d651160a6257" message=";;;;;;;;;;complete logger;;;#[payload]"/>
+			</batch:on-complete>
+		</batch:job>
+		<ee:transform doc:name="Transform Message" doc:id="ddb4bfcf-b0bd-4f7a-9f23-9a64cde80571" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="bacth-job-update-insertFlow1" doc:id="140ae282-f4d4-4be4-b6e4-33f42361318d" >
+		<http:listener doc:name="Listener" doc:id="5634d77e-0b72-4b85-92fc-35d9abf40293" config-ref="HTTP_Listener_config" path="/update" />
+		<ee:transform doc:name="Transform Message" doc:id="114e3b34-6dab-4890-a9ab-baed33bf93fd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="bacth-job-update-insertBatch_Job1" doc:id="4779decc-4477-4cec-8a68-e63d234de9a9" >
+			<batch:process-records >
+				<batch:step name="Batch_Step1" doc:id="f155e05e-a5a2-4f2b-b338-708441ebf063" >
+					<ee:transform doc:name="Transform Message" doc:id="ffb33de2-66c4-4f6d-9820-6b8d4f3f87b7" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{
+	id:payload.id,
+	name:payload.name,
+	phone:payload.cell,
+	gender:payload.gender,
+	group:payload.group,
+	startingdate:payload.date,
+	email:payload.email,
+	address:payload.address
+}]]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<db:bulk-update doc:name="Bulk update" doc:id="1be18481-7d5e-4ce8-ab38-f7436c76fac6" config-ref="Database_Config">
+						<db:sql ><![CDATA[UPDATE `data`.`student details` SET `student Name` = :name,`Moblie Number` = :phone,`Gender` = :gender,`Department` = :group,`Join date` = :startingdate,`Email` = :email,`Address` = :address WHERE `Roll Number`= :id ;]]></db:sql>
+					</db:bulk-update>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="cc06c7ed-1128-4c12-8134-5f66ac4f6ec9" size="2">
+						<logger level="INFO" doc:name="Logger" doc:id="3026c18a-c1c5-4956-9e11-4d690396a99f" message="#[payload]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="1c7cc1d3-fec3-4b0a-b9a8-141a88894e5d" message="#[payload]"/>
+			</batch:on-complete>
+		</batch:job>
+		<ee:transform doc:name="Transform Message" doc:id="c85d3431-5f10-421d-8e20-4a16f6fc1c87">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+	</flow>
+	<flow name="bacth-job-update-insertFlow2" doc:id="949347a5-e457-41c7-835d-4d3d672fe203" >
+		<http:listener doc:name="Listener" doc:id="fc826e02-1fa3-4c94-9398-527fe8f314c3" config-ref="HTTP_Listener_config" path="/delete"/>
+		<ee:transform doc:name="Transform Message" doc:id="0de4f8a9-f936-4daa-849a-d4ef2b76a9d6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="bacth-job-update-insertBatch_Job2" doc:id="8f27c7c5-e8b8-4e9c-ada1-e9cdd64fc538" >
+			<batch:process-records >
+				<batch:step name="Batch_Step2" doc:id="2dbb5218-015b-4c67-82f4-dbc7f2623549" >
+					<ee:transform doc:name="Transform Message" doc:id="3f52e9d3-bef7-4b09-b6f7-6f99d99a61ac" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="8897cf56-ae34-49c5-bb32-35aa90351c1a" size="2">
+						<ee:transform doc:name="Transform Message" doc:id="ebef191c-e9aa-4ca0-a88d-e0ba4d9b9f9b">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<db:bulk-delete doc:name="Bulk delete" doc:id="358bd9ed-bb98-41ff-bda8-d38ed89ca0dc" config-ref="Database_Config">
+							<db:bulk-input-parameters ><![CDATA[#[[{
+	id:payload.id
+}]]]]></db:bulk-input-parameters>
+							<db:sql ><![CDATA[DELETE FROM `data`.`student details` 
+WHERE `Roll Number`= :id;
+]]></db:sql>
+						</db:bulk-delete>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete>
+				<ee:transform doc:name="Transform Message" doc:id="e5dac3d4-9256-4bb5-8635-95e47afe09ed" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</batch:on-complete>
+		</batch:job>
+		<ee:transform doc:name="Transform Message" doc:id="5f1b7618-f040-403b-aad8-615dcc3a49d6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
